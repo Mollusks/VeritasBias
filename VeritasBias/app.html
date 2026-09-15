@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Political & Media Bias Analyzer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .highlight-left { background-color: rgba(59, 130, 246, 0.25); border-bottom: 2px solid #3b82f6; }
+        .highlight-right { background-color: rgba(239, 68, 68, 0.25); border-bottom: 2px solid #ef4444; }
+        .highlight-hardright { background-color: rgba(185, 28, 28, 0.35); border-bottom: 2px solid #b91c1c; }
+        .highlight-libertarian { background-color: rgba(234, 179, 8, 0.25); border-bottom: 2px solid #eab308; }
+        .highlight-populist { background-color: rgba(168, 85, 247, 0.25); border-bottom: 2px solid #a855f7; }
+        .highlight-rhetoric { background-color: rgba(249, 115, 22, 0.25); border-bottom: 2px dashed #f97316; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 overflow-x-hidden">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-rose-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid font-mono fa-scale-balanced"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-tight text-white">VeritasBias <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">NLP Workbench v2.5</span></h1>
+                    <p class="text-xs text-slate-400">Deep Political Stance, Framing & Loaded Language Analysis</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="loadSample('progressive')" class="text-xs px-3 py-1.5 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 border border-blue-800/60 transition">
+                    <i class="fa-solid fa-hand-holding-medical mr-1"></i> Progressive
+                </button>
+                <button onclick="loadSample('conservative_critique')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 transition" title="Right-wing article attacking left-wing policies">
+                    <i class="fa-solid fa-burst mr-1"></i> Right Op-Ed (Critique)
+                </button>
+                <button onclick="loadSample('hard_right')" class="text-xs px-3 py-1.5 rounded-lg bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/80 transition" title="Hard-right culture war & anti-establishment rhetoric">
+                    <i class="fa-solid fa-shield-halved mr-1"></i> Hard Right / Culture War
+                </button>
+                <button onclick="loadSample('conservative')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 transition">
+                    <i class="fa-solid fa-landmark mr-1"></i> Conservative
+                </button>
+                <button onclick="loadSample('populist')" class="text-xs px-3 py-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/60 transition">
+                    <i class="fa-solid fa-bullhorn mr-1"></i> Populist
+                </button>
+                <button onclick="loadSample('neutral')" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800/60 transition">
+                    <i class="fa-solid fa-newspaper mr-1"></i> Neutral News
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Input Workbench -->
+        <section class="lg:col-span-5 flex flex-col space-y-4">
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl flex flex-col flex-1">
+                <div class="flex items-center justify-between mb-3">
+                    <label for="inputText" class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-feather-pointed text-indigo-400"></i> Document / Speech Input
+                    </label>
+                    <span id="charCounter" class="text-xs font-mono text-slate-500">0 chars | 0 words</span>
+                </div>
+
+                <textarea id="inputText" 
+                    placeholder="Paste news articles, political speeches, op-eds, policy briefs, or social media statements here to analyze underlying ideological bias, framing, loaded language, and party alignment..." 
+                    class="w-full h-64 lg:h-80 p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm leading-relaxed resize-none custom-scrollbar transition"></textarea>
+
+                <div class="mt-4 flex items-center gap-3">
+                    <button id="analyzeBtn" onclick="runBiasAnalysis()" 
+                        class="flex-1 py-3 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition-all active:scale-[0.98]">
+                        <i class="fa-solid fa-microscope text-lg"></i>
+                        <span>Execute Deep Bias Analysis</span>
+                    </button>
+                    <button onclick="clearInput()" 
+                        class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition" title="Clear text">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Analysis Engine Status & Settings -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i> Analyzer Metrics Tuning
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block mb-1">Semantic Sensitivity</span>
+                        <select id="sensitivitySelect" onchange="runBiasAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-slate-200 text-xs focus:ring-1 focus:ring-indigo-500">
+                            <option value="high">High (Strict Match)</option>
+                            <option value="balanced" selected>Balanced (Standard)</option>
+                            <option value="broad">Broad (Includes Soft Signals)</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block mb-1">Spectrum Normalization</span>
+                        <select id="normSelect" onchange="runBiasAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-slate-200 text-xs focus:ring-1 focus:ring-indigo-500">
+                            <option value="us" selected>US Political Landscape</option>
+                            <option value="global">Global Multi-Party Standard</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Results Dashboard -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+
+            <div id="resultsCard" class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+                
+                <!-- Overview Row -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-800 pb-5 gap-4">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Detected Ideological Framing</span>
+                        <div class="flex items-center gap-3 mt-1">
+                            <h2 id="topIdeologyLabel" class="text-2xl font-extrabold text-white">Awaiting Text Input...</h2>
+                            <span id="confidenceBadge" class="hidden text-xs px-2.5 py-1 rounded-full font-semibold border">0% Confidence</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Gauges -->
+                    <div class="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+                        <div class="text-center">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Bias Intensity</span>
+                            <div id="biasGaugeVal" class="text-xl font-bold font-mono text-amber-400">0/100</div>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div class="text-center">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Subjectivity</span>
+                            <div id="subjGaugeVal" class="text-xl font-bold font-mono text-purple-400">0%</div>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div class="text-center">
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Factuality</span>
+                            <div id="factGaugeVal" class="text-xl font-bold font-mono text-emerald-400">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation summary box -->
+                <div id="explanationBox" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-300 leading-relaxed flex items-start space-x-3">
+                    <i class="fa-solid fa-circle-info text-indigo-400 mt-1 text-base"></i>
+                    <p id="explanationText">Enter or paste text into the left workbench and click "Execute Deep Bias Analysis" to display political compass placement, stance vectors, party matches, and sentence highlights.</p>
+                </div>
+
+                <!-- Grid section: Political Compass + Breakdown -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 2D Political Compass Matrix -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">2D Political Compass</span>
+                            <span id="compassCoords" class="text-[11px] font-mono text-indigo-400">(X: 0.0, Y: 0.0)</span>
+                        </div>
+                        <div class="relative w-full aspect-square max-w-[260px]">
+                            <canvas id="compassCanvas" class="w-full h-full rounded-lg bg-slate-900 border border-slate-800"></canvas>
+                        </div>
+                        <div class="grid grid-cols-2 w-full text-[10px] text-slate-500 mt-2 text-center">
+                            <span>Authoritarian / Statist</span>
+                            <span class="text-right">Libertarian / Free Market</span>
+                        </div>
+                    </div>
+
+                    <!-- Distribution Breakdown -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Ideological Lean Distribution</span>
+                        <div id="ideologyBars" class="space-y-2.5 flex-1 flex flex-col justify-center">
+                            <div class="text-xs text-slate-500 italic text-center">Run analysis to generate probability distribution across 8 ideology models.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sentence-by-Sentence Heatmap Analyzer -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-highlighter text-amber-400"></i> Interactive Sentence Framing Heatmap
+                        </span>
+                        <div class="flex items-center gap-3 text-[10px]">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-500/40 border border-blue-500"></span> Left</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-500/40 border border-red-500"></span> Conservative</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-800/60 border border-red-700"></span> Hard Right</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-yellow-500/40 border border-yellow-500"></span> Libertarian</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-500/40 border border-purple-500"></span> Populist</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-orange-500/40 border border-orange-500 border-dashed"></span> Rhetoric</span>
+                        </div>
+                    </div>
+                    <div id="sentenceHeatmap" class="p-4 rounded-lg bg-slate-900 border border-slate-800/80 text-sm leading-relaxed max-h-64 overflow-y-auto custom-scrollbar font-serif text-slate-200">
+                        <span class="text-slate-500 text-xs font-sans italic">Annotated text with color-coded sentence framing will appear here after analysis.</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Loaded Language & Rhetorical Signal Extractor -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Rhetorical Signals & Emotion</span>
+                        <div id="rhetoricList" class="space-y-2 text-xs">
+                            <span class="text-slate-500 italic">No rhetorical signals detected yet.</span>
+                        </div>
+                    </div>
+
+                    <!-- Party Alignment Guessing -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Political Party & Movement Alignment</span>
+                        <div id="partyList" class="space-y-2 text-xs">
+                            <span class="text-slate-500 italic">No party alignment calculated yet.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Broad semantic dictionary mapping keywords & n-grams to political spectrums
+        const IDEOLOGY_LEXICON = {
+            "Progressive / Left": {
+                weight: 1.2,
+                color: "#3b82f6",
+                x: -7.5, y: -2.5,
+                keywords: [
+                    "universal healthcare", "medicare for all", "public healthcare", "paid leave", "living wage",
+                    "workers rights", "union", "unions", "public housing", "social safety net", "income inequality",
+                    "wealth tax", "progressive taxation", "reproductive rights", "gender equality", "civil rights",
+                    "equal opportunity", "equity", "systemic racism", "public transit", "free college", "worker protection"
+                ],
+                stems: ["union", "worker", "welfare", "inequality", "equity", "public", "protect", "labor"]
+            },
+            "Green / Eco-Socialist": {
+                weight: 1.4,
+                color: "#10b981",
+                x: -8.0, y: -4.0,
+                keywords: [
+                    "climate justice", "green new deal", "climate action", "environmental protection", "renewable energy",
+                    "just transition", "carbon neutrality", "clean air", "eco socialism", "nature rights", "sustainability",
+                    "fossil fuels", "emissions", "clean energy", "environmental justice", "decarbonization"
+                ],
+                stems: ["climate", "green", "carbon", "renewable", "emission", "clean", "eco", "environment"]
+            },
+            "Liberal / Center-Left": {
+                weight: 1.0,
+                color: "#60a5fa",
+                x: -4.0, y: -1.0,
+                keywords: [
+                    "affordable care act", "government oversight", "public health", "scientific consensus", "diversity",
+                    "inclusion", "tolerance", "immigrant rights", "civil liberties", "social programs", "bipartisan reform",
+                    "multilateralism", "social safety net", "voting rights", "climate agreement"
+                ],
+                stems: ["reform", "health", "diversity", "program", "liberty", "inclusive", "science"]
+            },
+            "Moderate / Center": {
+                weight: 1.0,
+                color: "#94a3b8",
+                x: 0.0, y: 0.0,
+                keywords: [
+                    "balanced approach", "middle ground", "common sense", "bipartisan", "compromise", "consensus",
+                    "pragmatic", "moderate", "steady leadership", "fiscal responsibility", "civil discourse", "pragmatism"
+                ],
+                stems: ["balance", "compromise", "bipartisan", "consensus", "pragmatic", "steady", "moderate"]
+            },
+            "Conservative / Right": {
+                weight: 1.2,
+                color: "#ef4444",
+                x: 6.5, y: 3.5,
+                keywords: [
+                    "tax cuts", "small government", "free enterprise", "deregulation", "local control", "lower taxes",
+                    "family values", "traditional values", "religious freedom", "school choice", "law and order",
+                    "national security", "border security", "strong borders", "strong military", "defense spending", "patriotism"
+                ],
+                stems: ["tax", "border", "family", "tradition", "security", "military", "order", "faith", "enterprise"]
+            },
+            "Hard Right / Reactionary": {
+                weight: 1.6,
+                color: "#b91c1c",
+                x: 8.8, y: 7.2,
+                keywords: [
+                    "woke agenda", "wokeness", "cultural marxism", "dei mandates", "border invasion", "illegal aliens",
+                    "deep state", "weaponized government", "corrupt doj", "corrupt fbi", "biden regime", "radical leftists",
+                    "leftist mob", "gender ideology", "radical gender theory", "indoctrination", "groomers", "stolen election",
+                    "election integrity", "fake news media", "legacy media", "corrupt media", "globalist cabal", "open border invasion",
+                    "christian heritage", "traditional family", "second amendment rights", "gun rights", "cancel culture",
+                    "biological sex", "tyrannical overreach", "anti woke", "unconstitutional mandates"
+                ],
+                stems: ["woke", "marxist", "globalist", "invasion", "indoctrinat", "patriot", "sovereign", "tyranny", "weaponiz", "alien", "regime", "cabal"]
+            },
+            "Libertarian": {
+                weight: 1.3,
+                color: "#eab308",
+                x: 7.5, y: -7.0,
+                keywords: [
+                    "civil liberties", "individual freedom", "privacy rights", "personal choice", "limited government",
+                    "deregulation", "minimal state", "free market", "property rights", "economic liberty", "decentralization",
+                    "voluntary cooperation", "audit the fed", "individual liberty", "non interference"
+                ],
+                stems: ["liberty", "free", "market", "individual", "deregulate", "privacy", "voluntary", "choice"]
+            },
+            "Populist / Nationalist": {
+                weight: 1.3,
+                color: "#a855f7",
+                x: 5.5, y: 8.0,
+                keywords: [
+                    "anti elite", "corrupt elite", "main street", "anti establishment", "for the people", "working class",
+                    "sovereignty", "national identity", "america first", "border control", "national interest", "self reliance",
+                    "globalist agenda", "outsider", "take back control", "domestic manufacturing"
+                ],
+                stems: ["people", "elite", "sovereignty", "border", "globalist", "establishment", "national"]
+            }
+        };
+
+        // Key political figures database for entity identification
+        const POLITICIAN_DB = {
+            "joe biden": { party: "Democratic Party", lean: "Liberal / Center-Left" },
+            "kamala harris": { party: "Democratic Party", lean: "Liberal / Center-Left" },
+            "bernie sanders": { party: "Democratic Socialists", lean: "Progressive / Left" },
+            "alexandria ocasio-cortez": { party: "Democratic Party", lean: "Progressive / Left" },
+            "aoc": { party: "Democratic Party", lean: "Progressive / Left" },
+            "donald trump": { party: "Republican Party", lean: "Hard Right / Reactionary" },
+            "jd vance": { party: "Republican Party", lean: "Populist / Nationalist" },
+            "tucker carlson": { party: "Independent / Media", lean: "Hard Right / Reactionary" },
+            "ron desantis": { party: "Republican Party", lean: "Hard Right / Reactionary" },
+            "steve bannon": { party: "Populist Movement", lean: "Hard Right / Reactionary" },
+            "vivek ramaswamy": { party: "Republican Party", lean: "Hard Right / Reactionary" },
+            "marjorie taylor greene": { party: "Republican Party", lean: "Hard Right / Reactionary" },
+            "charlie kirk": { party: "Conservative Media", lean: "Hard Right / Reactionary" },
+            "ronald reagan": { party: "Republican Party", lean: "Conservative / Right" },
+            "mitch mcconnell": { party: "Republican Party", lean: "Conservative / Right" },
+            "ron paul": { party: "Libertarian Party", lean: "Libertarian" },
+            "keir starmer": { party: "Labour Party", lean: "Social Democratic" }
+        };
+
+        // Oppositional & Attack triggers used to differentiate topic mention vs author stance
+        const ATTACK_MODIFIERS_RIGHT = [
+            "radical", "disastrous", "reckless", "woke", "socialist", "marxist", "communist", "tyranny", "disgraceful",
+            "outrageous", "foolish", "scheme", "overreach", "disaster", "insane", "job killing", "bankrupt", "destroying",
+            "indoctrination", "nanny state", "leftist", "open border", "border invasion", "illegal aliens", "dei",
+            "cultural marxism", "deep state", "weaponized", "fake news", "corrupt media", "groomer", "biden regime",
+            "globalist", "cabal", "stolen election", "tyrannical", "leftist mob", "cancel culture", "unconstitutional",
+            "obsession", "defeat", "failed", "threat", "threatening", "punishing", "assault", "assaulting", "socialist agenda"
+        ];
+
+        const ATTACK_MODIFIERS_LEFT = [
+            "far right", "draconian", "cruel", "greedy", "corporate greed", "voter suppression",
+            "fascist", "extremist", "billionaire", "denial", "authoritarian", "anti worker", "rigged", "maga extremism"
+        ];
+
+        // Rhetorical pattern detectors for loaded language and emotional sentiment
+        const RHETORICAL_PATTERNS = [
+            { name: "Hyperbole & Exaggeration", pattern: /\b(disaster|catastrophe|devastating|unprecedented|existential threat|crisis|outrageous|shocking|destroying|crushing|nightmare)\b/gi, weight: 1.5 },
+            { name: "Absolutist & Dogmatic Terms", pattern: /\b(always|never|every|no one|everyone|impossible|undeniable|fact|absolutely|totally|unquestionably)\b/gi, weight: 1.0 },
+            { name: "Loaded & Emotional Language", pattern: /\b(radical|mob|tyranny|tyrannical|oppression|indoctrination|reckless|corrupt|disgraceful|shameful|greedy|evil|vicious|barbaric)\b/gi, weight: 2.0 },
+            { name: "Urgency & Alarmism", pattern: /\b(urgent|now or never|immediate action|critical juncture|failing|threatened|assault|under siege|stand up now|take back)\b/gi, weight: 1.5 },
+            { name: "Outgroup Vilification", pattern: /\b(corrupt elite|globalist cabal|leftist mob|deep state|regime|traitors|enemies|weaponized|puppet)\b/gi, weight: 2.2 }
+        ];
+
+        const SAMPLES = {
+            progressive: `We stand at a critical juncture where income inequality has reached disgraceful levels. We urgently need to enact Medicare for All to guarantee universal healthcare as a fundamental human right, not a profit enterprise for big insurance corporations. Furthermore, we must raise the national living wage, protect workers' union rights, and invest heavily in a Green New Deal to achieve climate justice. Public education and affordable housing deserve robust federal funding to break systemic cycles of poverty.`,
+
+            conservative_critique: `The radical left's obsession with the disastrous Green New Deal and Medicare for All is threatening to bankrupt our nation. Their reckless spending, open border policies, and big government mandates are destroying Main Street businesses and punishing hard-working American families. We must defeat this socialist agenda, enforce strict law and order, and protect our constitutional freedoms before it is too late.`,
+            
+            hard_right: `The radical left and their fake news media allies are carrying out a relentless assault on American values. From the open border invasion letting millions of illegal aliens flood our communities, to the weaponized DOJ persecuting political opponents, the deep state regime is pushing our nation into tyranny. They are forcing dangerous woke DEI agendas and cultural Marxism into our schools to corrupt our children, while shredding our Second Amendment rights and destroying our sovereignty for the globalist elite. Patriots must stand up now against this leftist mob to defend our Christian heritage and take back our country.`,
+
+            conservative: `To restore economic prosperity, we must immediately cut corporate tax rates, roll back burdensome federal regulations, and uphold free enterprise. Small business owners across our nation are suffocating under government overreach. We must enforce strict border security and uphold law and order to protect our communities. Traditional family values, religious freedom, and a strong national defense remain the bedrock pillars of American liberty and peace through strength.`,
+            
+            populist: `For decades, corrupt political elites and globalist insiders in Washington have betrayed the American working class. They shipped our manufacturing jobs overseas while ignoring main street communities. It is time for the people to take back control of their country. We demand strict border control, national sovereignty, and an end to foreign wars. We must put our own citizens first and crush the establishment that profits off our decline.`,
+            
+            neutral: `The Senate passed a $1.2 trillion bipartisan infrastructure bill on Tuesday in a 69-30 vote. The legislation includes $110 billion for roads and bridges, $66 billion for passenger rail, and $55 billion for water infrastructure. Proponents argue the spending will modernize national transit and boost economic activity over the coming decade. Opponents raise concerns regarding the impact on the national debt and question projected tax revenues.`
+        };
+
+        function loadSample(key) {
+            if (SAMPLES[key]) {
+                const textElem = document.getElementById('inputText');
+                textElem.value = SAMPLES[key];
+                updateCounters();
+                runBiasAnalysis();
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('inputText').value = '';
+            updateCounters();
+        }
+
+        function updateCounters() {
+            const val = document.getElementById('inputText').value;
+            const chars = val.length;
+            const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+            document.getElementById('charCounter').textContent = `${chars} chars | ${words} words`;
+        }
+
+        document.getElementById('inputText').addEventListener('input', updateCounters);
+
+
+        // Clean text and tokenize into words & n-grams
+        function extractNGrams(text, maxN = 3) {
+            const clean = text.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+            const words = clean.split(' ').filter(w => w.length > 0);
+            const ngrams = new Set();
+            
+            for (let n = 1; n <= maxN; n++) {
+                for (let i = 0; i <= words.length - n; i++) {
+                    ngrams.add(words.slice(i, i + n).join(' '));
+                }
+            }
+            return { words, ngrams };
+        }
+
+        // Split text into proper sentences while handling abbreviations
+        function segmentSentences(text) {
+            if (!text.trim()) return [];
+            // Simple robust regex for sentence splitting
+            const raw = text.match(/[^.!?]+[.!?]+["']?|[^.!?]+$/g) || [text];
+            return raw.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+
+        function runBiasAnalysis() {
+            const text = document.getElementById('inputText').value;
+            if (!text.trim()) {
+                resetDashboard();
+                return;
+            }
+
+            const sentences = segmentSentences(text);
+            const lowerText = text.toLowerCase();
+
+            // Initialize score vectors across ideology models
+            const scores = {
+                "Progressive / Left": 0,
+                "Green / Eco-Socialist": 0,
+                "Liberal / Center-Left": 0,
+                "Moderate / Center": 0,
+                "Conservative / Right": 0,
+                "Hard Right / Reactionary": 0,
+                "Libertarian": 0,
+                "Populist / Nationalist": 0
+            };
+
+            let totalMatchWeight = 0;
+            const critiqueLog = [];
+
+            // 1. Sentence-by-sentence contextual stance engine
+            sentences.forEach(sentence => {
+                const sLower = sentence.toLowerCase();
+
+                // Check for attack/critique rhetoric in this specific sentence
+                const hasRightAttack = ATTACK_MODIFIERS_RIGHT.some(mod => {
+                    const reg = new RegExp(`\\b${mod.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                    return reg.test(sLower);
+                });
+
+                const hasLeftAttack = ATTACK_MODIFIERS_LEFT.some(mod => {
+                    const reg = new RegExp(`\\b${mod.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                    return reg.test(sLower);
+                });
+
+                // Evaluate policy and ideological keywords within sentence context
+                Object.entries(IDEOLOGY_LEXICON).forEach(([ideology, config]) => {
+                    config.keywords.forEach(keyword => {
+                        const kwReg = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                        if (kwReg.test(sLower)) {
+                            const kwWeight = keyword.split(' ').length * 3.5 * config.weight;
+
+                            const isLeftCategory = ["Progressive / Left", "Green / Eco-Socialist", "Liberal / Center-Left"].includes(ideology);
+                            const isRightCategory = ["Conservative / Right", "Hard Right / Reactionary", "Libertarian"].includes(ideology);
+
+                            if (isLeftCategory && hasRightAttack) {
+                                // Right-wing critique of Left policy -> Re-route points to Conservative/Right!
+                                scores["Conservative / Right"] += kwWeight * 2.0;
+                                totalMatchWeight += kwWeight * 2.0;
+                                critiqueLog.push(keyword);
+                            } else if (isRightCategory && hasLeftAttack) {
+                                // Left-wing critique of Right policy -> Re-route points to Progressive/Left!
+                                scores["Progressive / Left"] += kwWeight * 2.0;
+                                totalMatchWeight += kwWeight * 2.0;
+                                critiqueLog.push(keyword);
+                            } else {
+                                // Direct endorsement or neutral reference
+                                scores[ideology] += kwWeight;
+                                totalMatchWeight += kwWeight;
+                            }
+                        }
+                    });
+                });
+
+                // Direct sentence rhetoric scoring (Boost stance based on author framing)
+                if (hasRightAttack) {
+                    const attackCount = ATTACK_MODIFIERS_RIGHT.filter(m => new RegExp(`\\b${m}\\b`, 'i').test(sLower)).length;
+                    
+                    // Check for hard-right / culture war triggers
+                    if (/\b(woke|dei|cultural marxism|deep state|border invasion|biden regime|fake news|groomer|cabal|stolen election|leftist mob|weaponized)\b/i.test(sLower)) {
+                        scores["Hard Right / Reactionary"] += attackCount * 5.5;
+                        scores["Populist / Nationalist"] += attackCount * 3.5;
+                        totalMatchWeight += attackCount * 9.0;
+                    } else {
+                        scores["Conservative / Right"] += attackCount * 4.5;
+                        scores["Hard Right / Reactionary"] += attackCount * 2.5;
+                        totalMatchWeight += attackCount * 7.0;
+                    }
+                }
+
+                if (hasLeftAttack) {
+                    const attackCount = ATTACK_MODIFIERS_LEFT.filter(m => new RegExp(`\\b${m}\\b`, 'i').test(sLower)).length;
+                    scores["Progressive / Left"] += attackCount * 4.5;
+                    scores["Liberal / Center-Left"] += attackCount * 3.0;
+                    totalMatchWeight += attackCount * 7.5;
+                }
+            });
+
+            // 2. Determine Primary Ideology & Confidence
+            const sortedIdeologies = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            let topLabel = sortedIdeologies[0][0];
+            let topScore = sortedIdeologies[0][1];
+
+            if (totalMatchWeight === 0 || topScore === 0) {
+                topLabel = "Moderate / Center";
+            }
+
+            const confidence = totalMatchWeight > 0 
+                ? Math.min(98, Math.max(45, Math.round((topScore / totalMatchWeight) * 100 + 25)))
+                : 50;
+
+            // 3. Calculate 2D Political Compass Coordinates (X: Economic, Y: Social/Authority)
+            let coordX = 0;
+            let coordY = 0;
+            if (totalMatchWeight > 0) {
+                Object.entries(scores).forEach(([ideology, score]) => {
+                    const weightNorm = score / totalMatchWeight;
+                    const config = IDEOLOGY_LEXICON[ideology];
+                    coordX += config.x * weightNorm;
+                    coordY += config.y * weightNorm;
+                });
+            }
+
+            // Clamp coordinates to -10 .. +10
+            coordX = Math.max(-10, Math.min(10, coordX));
+            coordY = Math.max(-10, Math.min(10, coordY));
+
+            // 4. Rhetorical Signals & Emotion Extraction
+            const rhetoricMatches = [];
+            let biasRawScore = 0;
+
+            RHETORICAL_PATTERNS.forEach(item => {
+                const found = text.match(item.pattern);
+                if (found) {
+                    const count = found.length;
+                    biasRawScore += count * item.weight;
+                    rhetoricMatches.push({ name: item.name, count, terms: Array.from(new Set(found.map(f => f.toLowerCase()))).slice(0, 4) });
+                }
+            });
+
+            const biasIntensity = Math.min(100, Math.round(biasRawScore * 7));
+
+            // 5. Subjectivity vs Factuality Metrics
+            const numCitations = (text.match(/\b(\d+%|\$\d+|\d+ percent|according to|study|research|data)\b/gi) || []).length;
+            const hedgeCount = (text.match(/\b(it seems|arguably|perhaps|suggests|likely|could|might)\b/gi) || []).length;
+
+            const subjectivity = Math.min(100, Math.max(10, Math.round(biasIntensity * 0.6 + hedgeCount * 8)));
+            const factuality = Math.min(100, Math.max(5, Math.round(numCitations * 22 + (100 - subjectivity) * 0.4)));
+
+            // 6. Entity & Politician Detection
+            const detectedEntities = [];
+            Object.entries(POLITICIAN_DB).forEach(([name, info]) => {
+                if (text.toLowerCase().includes(name)) {
+                    detectedEntities.push({ name: name.toUpperCase(), ...info });
+                }
+            });
+
+            // Update UI Elements
+            updateOverview(topLabel, confidence, biasIntensity, subjectivity, factuality, totalMatchWeight, critiqueLog);
+            renderCompass(coordX, coordY);
+            renderIdeologyBars(scores, totalMatchWeight);
+            renderSentenceHeatmap(sentences);
+            renderRhetoricList(rhetoricMatches);
+            renderPartyAlignment(topLabel, detectedEntities);
+        }
+
+
+        function updateOverview(label, conf, bias, subj, fact, totalWeight, critiqueLog) {
+            document.getElementById('topIdeologyLabel').textContent = label;
+            
+            const confBadge = document.getElementById('confidenceBadge');
+            confBadge.classList.remove('hidden');
+            confBadge.textContent = `${conf}% Fit Confidence`;
+            
+            if (conf > 70) {
+                confBadge.className = "text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+            } else if (conf > 50) {
+                confBadge.className = "text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30";
+            } else {
+                confBadge.className = "text-xs px-2.5 py-1 rounded-full font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+            }
+
+            document.getElementById('biasGaugeVal').textContent = `${bias}/100`;
+            document.getElementById('subjGaugeVal').textContent = `${subj}%`;
+            document.getElementById('factGaugeVal').textContent = `${fact}%`;
+
+            const expText = document.getElementById('explanationText');
+            if (totalWeight === 0) {
+                expText.textContent = "The text presents a neutral or balanced tone with minimal partisan keyword signals. No strong ideological lean detected.";
+            } else if (critiqueLog && critiqueLog.length > 0) {
+                expText.textContent = `Analysis detects strong alignment with ${label} political framing. The author uses critical/oppositional framing targeting left-leaning concepts (${critiqueLog.slice(0, 3).map(c => `"${c}"`).join(', ')}), combined with right-leaning stance indicators. Sensationalism intensity: ${bias}/100.`;
+            } else {
+                expText.textContent = `Analysis detects strong alignment with ${label} political framing. The text scores ${bias}/100 in sensationalism intensity and contains ${subj}% subjective framing.`;
+            }
+        }
+
+        // Draw 2D Political Compass on HTML5 Canvas
+        function renderCompass(x, y) {
+            const canvas = document.getElementById('compassCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size for high DPI crispness
+            canvas.width = 260;
+            canvas.height = 260;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Background Quadrants
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(0, 0, w, h);
+
+            // Quadrant Colors
+            // Top Left (Authoritarian Left)
+            ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+            ctx.fillRect(0, 0, w / 2, h / 2);
+            // Top Right (Authoritarian Right)
+            ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+            ctx.fillRect(w / 2, 0, w / 2, h / 2);
+            // Bottom Left (Libertarian Left)
+            ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+            ctx.fillRect(0, h / 2, w / 2, h / 2);
+            // Bottom Right (Libertarian Right)
+            ctx.fillStyle = "rgba(234, 179, 8, 0.08)";
+            ctx.fillRect(w / 2, h / 2, w / 2, h / 2);
+
+            // Grid Axes
+            ctx.strokeStyle = "#334155";
+            ctx.lineWidth = 1;
+
+            // Sub-grid
+            for (let i = 26; i < w; i += 26) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0); ctx.lineTo(i, h);
+                ctx.moveTo(0, i); ctx.lineTo(w, i);
+                ctx.stroke();
+            }
+
+            // Main Axes
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+            ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+            ctx.stroke();
+
+            // Labels
+            ctx.font = "10px Inter, sans-serif";
+            ctx.fillStyle = "#64748b";
+            ctx.fillText("LEFT", 6, h / 2 - 6);
+            ctx.fillText("RIGHT", w - 38, h / 2 - 6);
+            ctx.fillText("AUTHORITARIAN", w / 2 - 40, 14);
+            ctx.fillText("LIBERTARIAN", w / 2 - 32, h - 6);
+
+            // Convert X,Y (-10 to +10) to Canvas Pixels
+            const px = ((x + 10) / 20) * (w - 30) + 15;
+            const py = ((y + 10) / 20) * (h - 30) + 15;
+
+            // Draw Target Dot
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#818cf8";
+            ctx.fillStyle = "#6366f1";
+            ctx.beginPath();
+            ctx.arc(px, py, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0; // reset shadow
+
+            document.getElementById('compassCoords').textContent = `(Econ: ${x.toFixed(1)}, Soc: ${(-y).toFixed(1)})`;
+        }
+
+
+        function renderIdeologyBars(scores, totalWeight) {
+            const container = document.getElementById('ideologyBars');
+            container.innerHTML = '';
+
+            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+
+            sorted.forEach(([ideology, score]) => {
+                const pct = totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 0;
+                const config = IDEOLOGY_LEXICON[ideology];
+
+                const row = document.createElement('div');
+                row.className = "space-y-1";
+                row.innerHTML = `
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-300 font-medium">${ideology}</span>
+                        <span class="font-mono text-slate-400">${pct}%</span>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${config.color}"></div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderSentenceHeatmap(sentences) {
+            const container = document.getElementById('sentenceHeatmap');
+            container.innerHTML = '';
+
+            if (sentences.length === 0) {
+                container.innerHTML = '<span class="text-slate-500 italic">No text provided.</span>';
+                return;
+            }
+
+            sentences.forEach((sentence, idx) => {
+                const lower = sentence.toLowerCase();
+                let highlightClass = "";
+                let tagText = "";
+
+                // Contextual sentence analysis
+                const containsRightAttack = ATTACK_MODIFIERS_RIGHT.some(mod => lower.includes(mod));
+                const containsLeftAttack = ATTACK_MODIFIERS_LEFT.some(mod => lower.includes(mod));
+
+                if (/\b(woke|dei|cultural marxism|deep state|border invasion|illegal aliens|fake news|leftist mob|weaponized|biden regime|groomer|stolen election|globalist cabal)\b/i.test(sentence)) {
+                    highlightClass = "highlight-hardright";
+                    tagText = "Hard Right / Culture War Framing";
+                } else if (containsRightAttack) {
+                    highlightClass = "highlight-right";
+                    tagText = "Right-Wing Critique / Attack Framing";
+                } else if (containsLeftAttack) {
+                    highlightClass = "highlight-left";
+                    tagText = "Left-Wing Critique / Attack Framing";
+                } else if (/\b(medicare|healthcare|union|living wage|equity|wealth tax|green new deal)\b/i.test(sentence)) {
+                    highlightClass = "highlight-left";
+                    tagText = "Left Framing";
+                } else if (/\b(tax cuts|small government|border security|family values|free enterprise|law and order)\b/i.test(sentence)) {
+                    highlightClass = "highlight-right";
+                    tagText = "Conservative Framing";
+                } else if (/\b(civil liberties|privacy|individual freedom|free market|deregulation)\b/i.test(sentence)) {
+                    highlightClass = "highlight-libertarian";
+                    tagText = "Libertarian";
+                } else if (/\b(elite|globalist|establishment|for the people|america first)\b/i.test(sentence)) {
+                    highlightClass = "highlight-populist";
+                    tagText = "Populist";
+                } else if (/\b(disgraceful|radical|threat|catastrophe|outrage|must|always|never)\b/i.test(sentence)) {
+                    highlightClass = "highlight-rhetoric";
+                    tagText = "Charged Rhetoric";
+                }
+
+                const span = document.createElement('span');
+                span.className = `inline-block p-1 m-0.5 rounded cursor-pointer transition hover:opacity-80 ${highlightClass}`;
+                span.textContent = sentence + " ";
+                if (tagText) {
+                    span.title = `Sentence #${idx + 1}: Detected ${tagText}`;
+                }
+                container.appendChild(span);
+            });
+        }
+
+
+        function renderRhetoricList(matches) {
+            const container = document.getElementById('rhetoricList');
+            container.innerHTML = '';
+
+            if (matches.length === 0) {
+                container.innerHTML = '<span class="text-slate-500 italic">No strong emotional triggers or loaded rhetoric detected. Tone appears objective.</span>';
+                return;
+            }
+
+            matches.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between";
+                div.innerHTML = `
+                    <div>
+                        <span class="font-medium text-amber-300 block">${item.name}</span>
+                        <span class="text-[11px] text-slate-400">Examples: "${item.terms.join('", "')}"</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono text-xs font-semibold">${item.count}x</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderPartyAlignment(topIdeology, entities) {
+            const container = document.getElementById('partyList');
+            container.innerHTML = '';
+
+            const partyMap = {
+                "Progressive / Left": [
+                    { name: "Democratic Socialists of America", match: "94%" },
+                    { name: "Democratic Party (Progressive Wing)", match: "88%" },
+                    { name: "Green Party", match: "82%" }
+                ],
+                "Green / Eco-Socialist": [
+                    { name: "Green Party", match: "96%" },
+                    { name: "Progressive Party", match: "85%" }
+                ],
+                "Liberal / Center-Left": [
+                    { name: "Democratic Party", match: "92%" },
+                    { name: "Labour Party (UK)", match: "84%" }
+                ],
+                "Moderate / Center": [
+                    { name: "Independent / Centrist Coalition", match: "90%" },
+                    { name: "Forward Party", match: "82%" }
+                ],
+                "Conservative / Right": [
+                    { name: "Republican Party (Traditional Wing)", match: "93%" },
+                    { name: "Conservative Party (UK)", match: "85%" }
+                ],
+                "Hard Right / Reactionary": [
+                    { name: "Republican Party (Hard-Right / MAGA Wing)", match: "97%" },
+                    { name: "Patriot / Anti-Establishment Bloc", match: "91%" },
+                    { name: "Freedom Caucus Alignment", match: "88%" }
+                ],
+                "Libertarian": [
+                    { name: "Libertarian Party", match: "95%" },
+                    { name: "Free Market Coalition", match: "88%" }
+                ],
+                "Populist / Nationalist": [
+                    { name: "Republican Party (Populist Wing)", match: "94%" },
+                    { name: "Patriot / Reform Movements", match: "86%" }
+                ]
+            };
+
+            const parties = partyMap[topIdeology] || partyMap["Moderate / Center"];
+
+            parties.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between";
+                div.innerHTML = `
+                    <span class="text-slate-200 font-medium">${p.name}</span>
+                    <span class="text-indigo-400 font-mono font-semibold text-xs">${p.match} Match</span>
+                `;
+                container.appendChild(div);
+            });
+
+            if (entities.length > 0) {
+                const entDiv = document.createElement('div');
+                entDiv.className = "mt-3 pt-3 border-t border-slate-800 text-slate-400 text-[11px]";
+                entDiv.innerHTML = `<span class="font-semibold text-slate-300">Mentioned Political Figures:</span> ${entities.map(e => `${e.name} (${e.party})`).join(', ')}`;
+                container.appendChild(entDiv);
+            }
+        }
+
+        function resetDashboard() {
+            document.getElementById('topIdeologyLabel').textContent = 'Awaiting Text Input...';
+            document.getElementById('confidenceBadge').classList.add('hidden');
+            document.getElementById('biasGaugeVal').textContent = '0/100';
+            document.getElementById('subjGaugeVal').textContent = '0%';
+            document.getElementById('factGaugeVal').textContent = '0%';
+            document.getElementById('explanationText').textContent = 'Enter or paste text into the left workbench and click "Execute Deep Bias Analysis" to display political compass placement, stance vectors, party matches, and sentence highlights.';
+            renderCompass(0, 0);
+            document.getElementById('ideologyBars').innerHTML = '<div class="text-xs text-slate-500 italic text-center">Run analysis to generate probability distribution across 8 ideology models.</div>';
+            document.getElementById('sentenceHeatmap').innerHTML = '<span class="text-slate-500 text-xs font-sans italic">Annotated text with color-coded sentence framing will appear here after analysis.</span>';
+            document.getElementById('rhetoricList').innerHTML = '<span class="text-slate-500 italic">No rhetorical signals detected yet.</span>';
+            document.getElementById('partyList').innerHTML = '<span class="text-slate-500 italic">No party alignment calculated yet.</span>';
+        }
+
+        // Initialize default state on load
+        window.onload = function() {
+            renderCompass(0, 0);
+            // Load progressive sample by default for instant visualization
+            loadSample('progressive');
+        };
+    </script>
+</body>
+</html>
