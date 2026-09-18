@@ -535,6 +535,8 @@
             "democrats": { type: "party", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
 
             // --- INDEPENDENT / THIRD PARTY FIGURES ---
+            "andrew yang": { type: "person", party: "Forward Party / Independent", lean: "Centrist / Populist", figureType: "independent" },
+            "yang": { type: "person", party: "Forward Party / Independent", lean: "Centrist / Populist", figureType: "independent" },
             "robert f. kennedy jr.": { type: "person", party: "Independent / MAGA Cabinet", lean: "Populist / Libertarian", figureType: "independent" },
             "rfk jr": { type: "person", party: "Independent / MAGA Cabinet", lean: "Populist / Libertarian", figureType: "independent" },
             "jill stein": { type: "person", party: "Green Party", lean: "Green / Eco-Socialist", figureType: "left" },
@@ -578,8 +580,8 @@
             "wall street journal": { type: "outlet", party: "Financial Press", lean: "Conservative / Market", figureType: "right" },
 
             // --- INTERNATIONAL LEADERS & FIGURES ---
-            "vladimir putin": { type: "person", party: "Russia", lean: "Authoritarian Nationalist", figureType: "foreign" },
-            "putin": { type: "person", party: "Russia", lean: "Authoritarian Nationalist", figureType: "foreign" },
+            "vladimir putin": { type: "person", party: "Independent (Russia)", lean: "Authoritarian Nationalist", figureType: "foreign" },
+            "putin": { type: "person", party: "Independent (Russia)", lean: "Authoritarian Nationalist", figureType: "foreign" },
             "xi jinping": { type: "person", party: "China (CCP)", lean: "Authoritarian Socialist", figureType: "foreign" },
             "volodymyr zelenskyy": { type: "person", party: "Ukraine", lean: "Pro-Western Democratic", figureType: "foreign" },
             "zelenskyy": { type: "person", party: "Ukraine", lean: "Pro-Western Democratic", figureType: "foreign" },
@@ -1331,11 +1333,11 @@
                 "Progressive / Left": [{ name: "Democratic Party (Progressive Wing)", match: "94%" }, { name: "Democratic Socialists", match: "88%" }],
                 "Green / Eco-Socialist": [{ name: "Green Party", match: "96%" }],
                 "Liberal / Center-Left": [{ name: "Democratic Party", match: "94%" }],
-                "Moderate / Center": [{ name: "Independent / Centrist Coalition", match: "92%" }],
+                "Moderate / Center": [{ name: "Independent", match: "89%" }, {name:"Foward Party", match:"90%"}],
                 "Conservative / Right": [{ name: "Republican Party", match: "94%" }],
                 "Hard Right / Reactionary": [{ name: "Republican Party (MAGA Wing)", match: "98%" }],
                 "Libertarian / Free Market": [{ name: "Libertarian Party", match: "96%" }],
-                "Populist / Anti-Establishment": [{ name: "Populist Movement Bloc", match: "92%" }]
+                "Populist / Anti-Establishment": [{ name: "Populist Movement Bloc", match: "92%" }, { name: "Working Families Party", match: "91%" }]
             };
 
             const parties = partyMap[topIdeology] || partyMap["Moderate / Center"];
