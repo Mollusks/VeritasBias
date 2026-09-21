@@ -55,8 +55,8 @@
                         <i class="fa-solid font-mono fa-scale-balanced"></i>
                     </div>
                     <div>
-                        <h1 class="font-bold text-lg leading-tight tracking-tight text-white">VeritasBias <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">NLP Engine v5.5 Mega</span></h1>
-                        <p class="text-xs text-slate-400">200+ Politicians, Mayors & Governors KB • Prefix/Negation Safe • Multi-Axis Bias Engine</p>
+                        <h1 class="font-bold text-lg leading-tight tracking-tight text-white">VeritasBias <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">NLP Engine v6.0 Global</span></h1>
+                        <p class="text-xs text-slate-400">Dynamic Multi-Party Vector Proximity Engine • Global & US Parties • Entity Sentiment KB</p>
                     </div>
                 </div>
             </div>
@@ -98,7 +98,7 @@
                 </div>
 
                 <textarea id="inputText" 
-                    placeholder="Paste news articles, political speeches, op-eds, policy briefs, or social media statements here. The engine will evaluate multi-axis political alignment, entity sentiment, cognitive fallacies, tone markers, and loaded rhetoric with negation safety..." 
+                    placeholder="Paste news articles, political speeches, op-eds, policy briefs, or social media statements here. The engine will evaluate multi-axis political alignment, entity sentiment, calculated party match percentages, cognitive fallacies, and loaded rhetoric..." 
                     class="w-full h-72 lg:h-96 p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm leading-relaxed resize-none custom-scrollbar transition"></textarea>
 
                 <div class="mt-4 flex items-center gap-3">
@@ -128,7 +128,7 @@
                         </select>
                     </div>
                     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                        <span class="text-slate-400 block mb-1">Spectrum Standard</span>
+                        <span class="text-slate-400 block mb-1">Party Alignment Scope</span>
                         <select id="normSelect" onchange="runBiasAnalysis()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-slate-200 text-xs focus:ring-1 focus:ring-indigo-500">
                             <option value="us" selected>US Political Landscape</option>
                             <option value="global">Global Multi-Party</option>
@@ -180,7 +180,7 @@
                 <!-- Explanation summary box -->
                 <div id="explanationBox" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-300 leading-relaxed flex items-start space-x-3">
                     <i class="fa-solid fa-circle-info text-indigo-400 mt-1 text-base"></i>
-                    <p id="explanationText">Enter or paste text into the left workbench and click "Execute Deep Bias Analysis" to analyze multi-axis ideology, entity sentiment, rhetorical fallacies, and sentence framing.</p>
+                    <p id="explanationText">Enter or paste text into the left workbench and click "Execute Deep Bias Analysis" to analyze multi-axis ideology, entity sentiment, rhetorical fallacies, and calculated party matches.</p>
                 </div>
 
                 <!-- 2D Political Compass Matrix + Multi-Axis Stance Sliders -->
@@ -321,7 +321,7 @@
                     </div>
                 </div>
 
-                <!-- Rhetorical Signals & Party Alignment -->
+                <!-- Rhetorical Signals & Dynamic Party Alignment -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Rhetorical Signals & Emotional Intensity -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -331,10 +331,13 @@
                         </div>
                     </div>
 
-                    <!-- Party Alignment & Movement Proximity -->
+                    <!-- Dynamic Calculated Party Alignment -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Political Party & Movement Proximity</span>
-                        <div id="partyList" class="space-y-2 text-xs">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Calculated Party & Movement Match</span>
+                            <span id="partyScopeBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono">US Landscape</span>
+                        </div>
+                        <div id="partyList" class="space-y-2 text-xs max-h-64 overflow-y-auto custom-scrollbar">
                             <span class="text-slate-500 italic">No party alignment calculated yet.</span>
                         </div>
                     </div>
@@ -345,18 +348,92 @@
     </main>
 
     <script>
-        // Prefix & Negation Helper: Checks if match is preceded by "non-", "anti-", "not ", "un-", "pseudo-", etc.
+        // Prefix & Negation Helper
         function isNegatedOrPrefixed(text, matchIndex) {
             if (matchIndex <= 0) return false;
             const lookback = text.substring(Math.max(0, matchIndex - 15), matchIndex).toLowerCase();
             return /(?:non|anti|un|not|no|pseudo|counter|never)[-\s]+$/i.test(lookback);
         }
 
-        // Expanded Entity Knowledge Base (200+ Politicians, Mayors, Governors, Outlets, Institutions & Foreign Figures)
+        // Expanded Global Party Database with stance coordinates: econ (-10 to 10), social (-10 to 10), foreign (-10 to 10), gov (-10 to 10)
+        const PARTY_DATABASE = [
+            // --- UNITED STATES ---
+            { name: "Democratic Party", scope: "us", country: "United States", coords: { econ: -4, social: -5, foreign: 2, gov: -2 }, ideology: "Center-Left / Modern Liberal" },
+            { name: "Republican Party", scope: "us", country: "United States", coords: { econ: 6, social: 6, foreign: 4, gov: -2 }, ideology: "Center-Right / Conservative" },
+            { name: "Republican Party (MAGA Wing)", scope: "us", country: "United States", coords: { econ: 8, social: 8, foreign: -5, gov: -5 }, ideology: "Hard Right / Right-Wing Populist" },
+            { name: "Democratic Socialists of America (DSA)", scope: "us", country: "United States", coords: { econ: -9, social: -8, foreign: -6, gov: -2 }, ideology: "Democratic Socialist" },
+            { name: "Green Party of the United States", scope: "us", country: "United States", coords: { econ: -8, social: -8, foreign: -8, gov: 2 }, ideology: "Eco-Socialist / Left" },
+            { name: "Libertarian Party", scope: "us", country: "United States", coords: { econ: 8, social: -3, foreign: -8, gov: 8 }, ideology: "Libertarian / Free Market" },
+            { name: "Forward Party", scope: "us", country: "United States", coords: { econ: 0, social: -1, foreign: 0, gov: 3 }, ideology: "Centrist / Reformist" },
+            { name: "Working Families Party", scope: "us", country: "United States", coords: { econ: -8, social: -7, foreign: -4, gov: -1 }, ideology: "Progressive / Labor" },
+            { name: "Constitution Party", scope: "us", country: "United States", coords: { econ: 7, social: 9, foreign: -7, gov: 4 }, ideology: "Paleoconservative" },
+
+            // --- UNITED KINGDOM ---
+            { name: "Labour Party", scope: "global", country: "United Kingdom", coords: { econ: -4, social: -4, foreign: 2, gov: -1 }, ideology: "Center-Left / Social Democracy" },
+            { name: "Conservative Party (Tories)", scope: "global", country: "United Kingdom", coords: { econ: 5, social: 4, foreign: 3, gov: -1 }, ideology: "Center-Right / Conservative" },
+            { name: "Reform UK", scope: "global", country: "United Kingdom", coords: { econ: 7, social: 7, foreign: -5, gov: 2 }, ideology: "Right-Wing Populist" },
+            { name: "Liberal Democrats", scope: "global", country: "United Kingdom", coords: { econ: -2, social: -5, foreign: 4, gov: 3 }, ideology: "Centrist / Social Liberal" },
+            { name: "Green Party of England & Wales", scope: "global", country: "United Kingdom", coords: { econ: -7, social: -8, foreign: -6, gov: 2 }, ideology: "Green / Progressive" },
+            { name: "Scottish National Party (SNP)", scope: "global", country: "United Kingdom", coords: { econ: -5, social: -6, foreign: 1, gov: -1 }, ideology: "Center-Left / Regionalist" },
+
+            // --- CANADA ---
+            { name: "Liberal Party of Canada", scope: "global", country: "Canada", coords: { econ: -3, social: -6, foreign: 3, gov: -2 }, ideology: "Center-Left / Liberal" },
+            { name: "Conservative Party of Canada", scope: "global", country: "Canada", coords: { econ: 6, social: 3, foreign: 2, gov: 2 }, ideology: "Center-Right / Conservative" },
+            { name: "New Democratic Party (NDP)", scope: "global", country: "Canada", coords: { econ: -7, social: -7, foreign: -3, gov: -2 }, ideology: "Social Democratic" },
+            { name: "Bloc Québécois", scope: "global", country: "Canada", coords: { econ: -4, social: -4, foreign: -2, gov: 1 }, ideology: "Social Democratic / Regionalist" },
+            { name: "People's Party of Canada (PPC)", scope: "global", country: "Canada", coords: { econ: 8, social: 7, foreign: -7, gov: 6 }, ideology: "Right-Wing Populist / Libertarian" },
+
+            // --- FRANCE ---
+            { name: "Renaissance (En Marche)", scope: "global", country: "France", coords: { econ: 2, social: -3, foreign: 6, gov: -1 }, ideology: "Centrist / Liberal / Pro-EU" },
+            { name: "National Rally (Rassemblement National)", scope: "global", country: "France", coords: { econ: 3, social: 8, foreign: -6, gov: -5 }, ideology: "Right-Wing Populist / Nationalist" },
+            { name: "La France Insoumise", scope: "global", country: "France", coords: { econ: -8, social: -7, foreign: -7, gov: -2 }, ideology: "Democratic Socialist / Left Populist" },
+            { name: "The Republicans (LR)", scope: "global", country: "France", coords: { econ: 5, social: 5, foreign: 3, gov: -1 }, ideology: "Center-Right / Gaullist" },
+            { name: "Socialist Party (PS)", scope: "global", country: "France", coords: { econ: -5, social: -5, foreign: 3, gov: -1 }, ideology: "Center-Left / Social Democratic" },
+
+            // --- GERMANY ---
+            { name: "Social Democratic Party (SPD)", scope: "global", country: "Germany", coords: { econ: -4, social: -4, foreign: 3, gov: -1 }, ideology: "Center-Left / Social Democrat" },
+            { name: "CDU/CSU", scope: "global", country: "Germany", coords: { econ: 4, social: 3, foreign: 4, gov: -1 }, ideology: "Center-Right / Christian Democrat" },
+            { name: "Alliance 90 / The Greens", scope: "global", country: "Germany", coords: { econ: -5, social: -7, foreign: 3, gov: -1 }, ideology: "Green / Center-Left" },
+            { name: "Alternative for Germany (AfD)", scope: "global", country: "Germany", coords: { econ: 6, social: 9, foreign: -7, gov: -4 }, ideology: "Hard Right / Radical Nationalist" },
+            { name: "Free Democratic Party (FDP)", scope: "global", country: "Germany", coords: { econ: 6, social: -2, foreign: 3, gov: 5 }, ideology: "Classical Liberal / Free Market" },
+            { name: "Bündnis Sahra Wagenknecht (BSW)", scope: "global", country: "Germany", coords: { econ: -7, social: 6, foreign: -7, gov: -3 }, ideology: "Left-Wing Conservative Populist" },
+
+            // --- LATIN AMERICA ---
+            { name: "La Libertad Avanza", scope: "global", country: "Argentina", coords: { econ: 9, social: 3, foreign: 2, gov: 9 }, ideology: "Libertarian / Right-Wing Radical" },
+            { name: "MORENA", scope: "global", country: "Mexico", coords: { econ: -6, social: -3, foreign: -2, gov: -3 }, ideology: "Left-Wing Populist / Nationalism" },
+            { name: "National Action Party (PAN)", scope: "global", country: "Mexico", coords: { econ: 5, social: 6, foreign: 3, gov: 1 }, ideology: "Center-Right / Conservative" },
+            { name: "Workers' Party (PT)", scope: "global", country: "Brazil", coords: { econ: -6, social: -5, foreign: 1, gov: -2 }, ideology: "Left-Wing / Social Democrat" },
+            { name: "Liberal Party (PL)", scope: "global", country: "Brazil", coords: { econ: 7, social: 8, foreign: 2, gov: 1 }, ideology: "Right-Wing / Conservative Populist" },
+
+            // --- ASIA, MIDDLE EAST & OCEANIA ---
+            { name: "Australian Labor Party", scope: "global", country: "Australia", coords: { econ: -3, social: -4, foreign: 3, gov: -1 }, ideology: "Center-Left / Social Democratic" },
+            { name: "Liberal Party of Australia", scope: "global", country: "Australia", coords: { econ: 5, social: 3, foreign: 4, gov: 1 }, ideology: "Center-Right / Conservative" },
+            { name: "Likud", scope: "global", country: "Israel", coords: { econ: 4, social: 7, foreign: 7, gov: -2 }, ideology: "Right-Wing Nationalist" },
+            { name: "Yesh Atid", scope: "global", country: "Israel", coords: { econ: 0, social: -4, foreign: 2, gov: 2 }, ideology: "Centrist / Liberal" },
+            { name: "Bharatiya Janata Party (BJP)", scope: "global", country: "India", coords: { econ: 2, social: 8, foreign: 4, gov: -3 }, ideology: "Right-Wing / Hindu Nationalist" },
+            { name: "Indian National Congress (INC)", scope: "global", country: "India", coords: { econ: -4, social: -3, foreign: 1, gov: -2 }, ideology: "Center-Left / Secularist" },
+            { name: "Liberal Democratic Party (LDP)", scope: "global", country: "Japan", coords: { econ: 3, social: 4, foreign: 5, gov: -2 }, ideology: "Center-Right / Conservative" },
+
+            // --- OTHER EUROPEAN NATIONS ---
+            { name: "Brothers of Italy (FdI)", scope: "global", country: "Italy", coords: { econ: 4, social: 8, foreign: 3, gov: -3 }, ideology: "Right-Wing / Nationalist" },
+            { name: "Democratic Party (PD)", scope: "global", country: "Italy", coords: { econ: -4, social: -5, foreign: 3, gov: -1 }, ideology: "Center-Left / Social Democrat" },
+            { name: "Spanish Socialist Workers' Party (PSOE)", scope: "global", country: "Spain", coords: { econ: -5, social: -5, foreign: 3, gov: -1 }, ideology: "Center-Left" },
+            { name: "People's Party (PP)", scope: "global", country: "Spain", coords: { econ: 5, social: 4, foreign: 3, gov: 0 }, ideology: "Center-Right / Conservative" },
+            { name: "Vox", scope: "global", country: "Spain", coords: { econ: 7, social: 9, foreign: -4, gov: -3 }, ideology: "Hard Right / Nationalist" },
+            { name: "Fidesz", scope: "global", country: "Hungary", coords: { econ: 3, social: 9, foreign: -6, gov: -7 }, ideology: "Hard Right / Illiberal Conservative" },
+            { name: "Civic Coalition (KO)", scope: "global", country: "Poland", coords: { econ: 1, social: -3, foreign: 5, gov: 1 }, ideology: "Centrist / Pro-European" },
+            { name: "Law and Justice (PiS)", scope: "global", country: "Poland", coords: { econ: -3, social: 8, foreign: -2, gov: -5 }, ideology: "Right-Wing / Social Conservative" },
+            { name: "Party for Freedom (PVV)", scope: "global", country: "Netherlands", coords: { econ: -2, social: 8, foreign: -6, gov: -4 }, ideology: "Right-Wing Populist" },
+            { name: "Servant of the People", scope: "global", country: "Ukraine", coords: { econ: 0, social: -1, foreign: 5, gov: 1 }, ideology: "Centrist / Pro-Western" },
+            { name: "United Russia", scope: "global", country: "Russia", coords: { econ: 2, social: 9, foreign: 8, gov: -9 }, ideology: "Authoritarian / Nationalist Statism" },
+            { name: "Chinese Communist Party (CCP)", scope: "global", country: "China", coords: { econ: -5, social: 9, foreign: 8, gov: -10 }, ideology: "Authoritarian Socialist" }
+        ];
+
+        // Expanded Entity Knowledge Base with explicit Party affiliation for ALL international figures
         const ENTITY_DB = {
             // --- US MAYORS & MUNICIPAL LEADERS ---
-            "zohran mamdani": { type: "person", party: "Democratic Socialists / NY Assembly", lean: "Progressive / Left", figureType: "left" },
-            "mamdani": { type: "person", party: "Democratic Socialists / NY Assembly", lean: "Progressive / Left", figureType: "left" },
+            "zohran mamdani": { type: "person", party: "Democratic Socialists of America (DSA) / NY Assembly", lean: "Progressive / Left", figureType: "left" },
+            "mamdani": { type: "person", party: "Democratic Socialists of America (DSA) / NY Assembly", lean: "Progressive / Left", figureType: "left" },
             "eric adams": { type: "person", party: "Democratic Party / NYC Mayor", lean: "Center-Left / Moderate", figureType: "left" },
             "karen bass": { type: "person", party: "Democratic Party / LA Mayor", lean: "Liberal / Center-Left", figureType: "left" },
             "brandon johnson": { type: "person", party: "Democratic Party / Chicago Mayor", lean: "Progressive / Left", figureType: "left" },
@@ -394,50 +471,28 @@
             "youngkin": { type: "person", party: "Republican Party / VA Governor", lean: "Conservative / Right", figureType: "right" },
             "brian kemp": { type: "person", party: "Republican Party / GA Governor", lean: "Conservative / Right", figureType: "right" },
             "kemp": { type: "person", party: "Republican Party / GA Governor", lean: "Conservative / Right", figureType: "right" },
-            "maura healey": { type: "person", party: "Democratic Party / MA Governor", lean: "Progressive / Left", figureType: "left" },
-            "katie hobbs": { type: "person", party: "Democratic Party / AZ Governor", lean: "Liberal / Center-Left", figureType: "left" },
             "spencer cox": { type: "person", party: "Republican Party / UT Governor", lean: "Moderate Conservative", figureType: "right" },
             "jared polis": { type: "person", party: "Democratic Party / CO Governor", lean: "Libertarian-leaning Center-Left", figureType: "left" },
             "polis": { type: "person", party: "Democratic Party / CO Governor", lean: "Libertarian-leaning Center-Left", figureType: "left" },
             "tim walz": { type: "person", party: "Democratic Party / MN Governor", lean: "Progressive / Left", figureType: "left" },
             "walz": { type: "person", party: "Democratic Party / MN Governor", lean: "Progressive / Left", figureType: "left" },
-            "mike dewine": { type: "person", party: "Republican Party / OH Governor", lean: "Conservative / Moderate", figureType: "right" },
-            "dewine": { type: "person", party: "Republican Party / OH Governor", lean: "Conservative / Moderate", figureType: "right" },
-            "phil murphy": { type: "person", party: "Democratic Party / NJ Governor", lean: "Liberal / Center-Left", figureType: "left" },
-            "joe lombardo": { type: "person", party: "Republican Party / NV Governor", lean: "Conservative / Right", figureType: "right" },
-            "tate reeves": { type: "person", party: "Republican Party / MS Governor", lean: "Conservative / Right", figureType: "right" },
-            "kim reynolds": { type: "person", party: "Republican Party / IA Governor", lean: "Conservative / Right", figureType: "right" },
-            "reynolds": { type: "person", party: "Republican Party / IA Governor", lean: "Conservative / Right", figureType: "right" },
-            "chris sununu": { type: "person", party: "Republican Party / NH Governor", lean: "Moderate Conservative", figureType: "right" },
-            "sununu": { type: "person", party: "Republican Party / NH Governor", lean: "Moderate Conservative", figureType: "right" },
 
-            // --- CABINET, APPOINTEES & EXECUTIVE FIGURES ---
-            "pete hegseth": { type: "person", party: "Republican / Defense Secretary", lean: "Hard Right / Conservative", figureType: "right" },
-            "hegseth": { type: "person", party: "Republican / Defense Secretary", lean: "Hard Right / Conservative", figureType: "right" },
+            // --- US CABINET & EXECUTIVE FIGURES ---
+            "pete hegseth": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
+            "hegseth": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
             "tulsi gabbard": { type: "person", party: "Independent / MAGA Cabinet", lean: "Populist / Anti-Establishment", figureType: "independent" },
             "gabbard": { type: "person", party: "Independent / MAGA Cabinet", lean: "Populist / Anti-Establishment", figureType: "independent" },
-            "pam bondi": { type: "person", party: "Republican / Attorney General", lean: "Hard Right / Conservative", figureType: "right" },
-            "bondi": { type: "person", party: "Republican / Attorney General", lean: "Hard Right / Conservative", figureType: "right" },
-            "kash patel": { type: "person", party: "Republican / FBI Nominee", lean: "Hard Right / Populist", figureType: "right" },
-            "tom homan": { type: "person", party: "Republican / Border Czar", lean: "Hard Right / Conservative", figureType: "right" },
-            "homan": { type: "person", party: "Republican / Border Czar", lean: "Hard Right / Conservative", figureType: "right" },
-            "doug burgum": { type: "person", party: "Republican / Interior Secretary", lean: "Conservative / Free Market", figureType: "right" },
-            "burgum": { type: "person", party: "Republican / Interior Secretary", lean: "Conservative / Free Market", figureType: "right" },
-            "howard lutnick": { type: "person", party: "Republican / Commerce Secretary", lean: "Conservative / Free Market", figureType: "right" },
-            "lutnick": { type: "person", party: "Republican / Commerce Secretary", lean: "Conservative / Free Market", figureType: "right" },
-            "lee zeldin": { type: "person", party: "Republican / EPA Administrator", lean: "Conservative / Right", figureType: "right" },
-            "zeldin": { type: "person", party: "Republican / EPA Administrator", lean: "Conservative / Right", figureType: "right" },
-            "michael waltz": { type: "person", party: "Republican / NSA Adviser", lean: "Conservative / Hawkish", figureType: "right" },
-            "antony blinken": { type: "person", party: "Democratic / State Dept", lean: "Liberal / Foreign Policy", figureType: "left" },
-            "blinken": { type: "person", party: "Democratic / State Dept", lean: "Liberal / Foreign Policy", figureType: "left" },
-            "janet yellen": { type: "person", party: "Democratic / Treasury Dept", lean: "Center-Left / Technocratic", figureType: "left" },
-            "yellen": { type: "person", party: "Democratic / Treasury Dept", lean: "Center-Left / Technocratic", figureType: "left" },
-            "merrick garland": { type: "person", party: "Democratic / DOJ", lean: "Institutional / Moderate", figureType: "institution" },
-            "garland": { type: "person", party: "Democratic / DOJ", lean: "Institutional / Moderate", figureType: "institution" },
-            "alejandro mayorkas": { type: "person", party: "Democratic / DHS", lean: "Liberal / Center-Left", figureType: "left" },
-            "mayorkas": { type: "person", party: "Democratic / DHS", lean: "Liberal / Center-Left", figureType: "left" },
+            "pam bondi": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
+            "bondi": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
+            "kash patel": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
+            "tom homan": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
+            "homan": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
+            "antony blinken": { type: "person", party: "Democratic Party", lean: "Liberal / Foreign Policy", figureType: "left" },
+            "blinken": { type: "person", party: "Democratic Party", lean: "Liberal / Foreign Policy", figureType: "left" },
+            "janet yellen": { type: "person", party: "Democratic Party", lean: "Center-Left / Technocratic", figureType: "left" },
+            "yellen": { type: "person", party: "Democratic Party", lean: "Center-Left / Technocratic", figureType: "left" },
 
-            // --- US REPUBLICAN / RIGHT FIGURES ---
+            // --- US REPUBLICAN FIGURES ---
             "donald trump": { type: "person", party: "Republican Party", lean: "Hard Right / Reactionary", figureType: "right" },
             "trump": { type: "person", party: "Republican Party", lean: "Hard Right / Reactionary", figureType: "right" },
             "jd vance": { type: "person", party: "Republican Party", lean: "Populist / Conservative", figureType: "right" },
@@ -450,46 +505,14 @@
             "vivek ramaswamy": { type: "person", party: "Republican Party", lean: "Hard Right / Libertarian", figureType: "right" },
             "ted cruz": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
             "marco rubio": { type: "person", party: "Republican Party", lean: "Conservative / Hawkish", figureType: "right" },
-            "rand paul": { type: "person", party: "Republican Party", lean: "Libertarian / Right", figureType: "libertarian" },
+            "rand paul": { type: "person", party: "Libertarian Party / Republican", lean: "Libertarian / Right", figureType: "libertarian" },
             "thomas massie": { type: "person", party: "Republican Party", lean: "Libertarian / Right", figureType: "libertarian" },
-            "tim scott": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
             "marjorie taylor greene": { type: "person", party: "Republican Party", lean: "Hard Right / Reactionary", figureType: "right" },
             "matt gaetz": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
-            "jim jordan": { type: "person", party: "Republican Party", lean: "Hard Right / Conservative", figureType: "right" },
-            "byron donalds": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "donalds": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "anna paulina luna": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
-            "lauren boebert": { type: "person", party: "Republican Party", lean: "Hard Right / Reactionary", figureType: "right" },
-            "boebert": { type: "person", party: "Republican Party", lean: "Hard Right / Reactionary", figureType: "right" },
-            "chip roy": { type: "person", party: "Republican Party", lean: "Hard Right / Freedom Caucus", figureType: "right" },
-            "steve scalise": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "scalise": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "tom cotton": { type: "person", party: "Republican Party", lean: "Conservative / Hawkish", figureType: "right" },
-            "cotton": { type: "person", party: "Republican Party", lean: "Conservative / Hawkish", figureType: "right" },
-            "josh hawley": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
-            "hawley": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
-            "lindsey graham": { type: "person", party: "Republican Party", lean: "Conservative / Hawkish", figureType: "right" },
-            "graham": { type: "person", party: "Republican Party", lean: "Conservative / Hawkish", figureType: "right" },
-            "rick scott": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "marsha blackburn": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "mike lee": { type: "person", party: "Republican Party", lean: "Conservative / Libertarian", figureType: "right" },
-            "john thune": { type: "person", party: "Republican Party", lean: "Conservative / Institutional", figureType: "right" },
-            "thune": { type: "person", party: "Republican Party", lean: "Conservative / Institutional", figureType: "right" },
-            "john cornyn": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "cornyn": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "james comer": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "comer": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "dan crenshaw": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "crenshaw": { type: "person", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
-            "ron johnson": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
-            "kari lake": { type: "person", party: "Republican Party", lean: "Hard Right / Populist", figureType: "right" },
-            "mitt romney": { type: "person", party: "Republican Party (Moderate)", lean: "Moderate / Center-Right", figureType: "right" },
-            "liz cheney": { type: "person", party: "Republican Party (Neocon)", lean: "Conservative / Hawkish", figureType: "right" },
-            "george w. bush": { type: "person", party: "Republican Party", lean: "Conservative / Hawkish", figureType: "right" },
             "republicans": { type: "party", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
             "gop": { type: "party", party: "Republican Party", lean: "Conservative / Right", figureType: "right" },
 
-            // --- US DEMOCRATIC / LEFT FIGURES ---
+            // --- US DEMOCRATIC FIGURES ---
             "joe biden": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "biden": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "kamala harris": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
@@ -502,121 +525,82 @@
             "schumer": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "hakeem jeffries": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "jeffries": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
-            "bernie sanders": { type: "person", party: "Democratic Socialists", lean: "Progressive / Left", figureType: "left" },
-            "sanders": { type: "person", party: "Democratic Socialists", lean: "Progressive / Left", figureType: "left" },
-            "alexandria ocasio-cortez": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "aoc": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
+            "bernie sanders": { type: "person", party: "Democratic Socialists of America (DSA)", lean: "Progressive / Left", figureType: "left" },
+            "sanders": { type: "person", party: "Democratic Socialists of America (DSA)", lean: "Progressive / Left", figureType: "left" },
+            "alexandria ocasio-cortez": { type: "person", party: "Democratic Party / DSA", lean: "Progressive / Left", figureType: "left" },
+            "aoc": { type: "person", party: "Democratic Party / DSA", lean: "Progressive / Left", figureType: "left" },
             "elizabeth warren": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
             "warren": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
             "pete buttigieg": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "buttigieg": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "john fetterman": { type: "person", party: "Democratic Party", lean: "Populist / Center-Left", figureType: "left" },
             "fetterman": { type: "person", party: "Democratic Party", lean: "Populist / Center-Left", figureType: "left" },
-            "raphael warnock": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
-            "warnock": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
-            "jon ossoff": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
-            "mark kelly": { type: "person", party: "Democratic Party", lean: "Moderate / Center-Left", figureType: "left" },
-            "pramila jayapal": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "jayapal": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "ro khanna": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "khanna": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "jamie raskin": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "raskin": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "adam schiff": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
-            "schiff": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
-            "cori bush": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "ayanna pressley": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "pressley": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "ilhan omar": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "omar": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "rashida tlaib": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "tlaib": { type: "person", party: "Democratic Party", lean: "Progressive / Left", figureType: "left" },
-            "hillary clinton": { type: "person", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
             "democrats": { type: "party", party: "Democratic Party", lean: "Liberal / Center-Left", figureType: "left" },
 
             // --- INDEPENDENT / THIRD PARTY FIGURES ---
-            "andrew yang": { type: "person", party: "Forward Party / Independent", lean: "Centrist / Populist", figureType: "independent" },
-            "yang": { type: "person", party: "Forward Party / Independent", lean: "Centrist / Populist", figureType: "independent" },
-            "robert f. kennedy jr.": { type: "person", party: "Independent / MAGA Cabinet", lean: "Populist / Libertarian", figureType: "independent" },
-            "rfk jr": { type: "person", party: "Independent / MAGA Cabinet", lean: "Populist / Libertarian", figureType: "independent" },
-            "jill stein": { type: "person", party: "Green Party", lean: "Green / Eco-Socialist", figureType: "left" },
+            "andrew yang": { type: "person", party: "Forward Party", lean: "Centrist / Populist", figureType: "independent" },
+            "yang": { type: "person", party: "Forward Party", lean: "Centrist / Populist", figureType: "independent" },
+            "robert f. kennedy jr.": { type: "person", party: "Independent / MAGA Ally", lean: "Populist / Libertarian", figureType: "independent" },
+            "rfk jr": { type: "person", party: "Independent / MAGA Ally", lean: "Populist / Libertarian", figureType: "independent" },
+            "jill stein": { type: "person", party: "Green Party of the United States", lean: "Green / Eco-Socialist", figureType: "left" },
             "chase oliver": { type: "person", party: "Libertarian Party", lean: "Libertarian / Free Market", figureType: "libertarian" },
-            "cornel west": { type: "person", party: "Independent", lean: "Progressive / Left", figureType: "left" },
+            "cornel west": { type: "person", party: "Independent / Justice for All", lean: "Progressive / Left", figureType: "left" },
 
-            // --- SUPREME COURT JUSTICES ---
-            "john roberts": { type: "person", party: "Supreme Court", lean: "Conservative / Institutional", figureType: "institution" },
-            "clarence thomas": { type: "person", party: "Supreme Court", lean: "Hard Right / Originalist", figureType: "right" },
-            "samuel alito": { type: "person", party: "Supreme Court", lean: "Hard Right / Originalist", figureType: "right" },
-            "sonia sotomayor": { type: "person", party: "Supreme Court", lean: "Liberal / Progressive", figureType: "left" },
-            "elena kagan": { type: "person", party: "Supreme Court", lean: "Liberal / Progressive", figureType: "left" },
-            "neil gorsuch": { type: "person", party: "Supreme Court", lean: "Conservative / Libertarian", figureType: "right" },
-            "brett kavanaugh": { type: "person", party: "Supreme Court", lean: "Conservative / Right", figureType: "right" },
-            "amy coney barrett": { type: "person", party: "Supreme Court", lean: "Conservative / Right", figureType: "right" },
-            "ketanji brown jackson": { type: "person", party: "Supreme Court", lean: "Liberal / Progressive", figureType: "left" },
-            "supreme court": { type: "institution", party: "Judicial Branch", lean: "Institutional / Constitutional", figureType: "institution" },
-            "scotus": { type: "institution", party: "Judicial Branch", lean: "Institutional / Constitutional", figureType: "institution" },
-
-            // --- MEDIA PERSONALITIES & COMMENTATORS ---
-            "tucker carlson": { type: "person", party: "Independent Media", lean: "Hard Right / Reactionary", figureType: "right" },
-            "elon musk": { type: "person", party: "Tech / MAGA Ally", lean: "Hard Right / Libertarian", figureType: "right" },
-            "musk": { type: "person", party: "Tech / MAGA Ally", lean: "Hard Right / Libertarian", figureType: "right" },
-            "ben shapiro": { type: "person", party: "Daily Wire", lean: "Conservative / Right", figureType: "right" },
-            "joe rogan": { type: "person", party: "Independent Podcast", lean: "Libertarian / Populist", figureType: "independent" },
-            "rachel maddow": { type: "person", party: "MSNBC", lean: "Liberal / Center-Left", figureType: "left" },
-            "sean hannity": { type: "person", party: "Fox News", lean: "Conservative / Right", figureType: "right" },
-            "charlie kirk": { type: "person", party: "Turning Point USA", lean: "Hard Right / Reactionary", figureType: "right" },
-            "candace owens": { type: "person", party: "Independent Media", lean: "Hard Right / Reactionary", figureType: "right" },
-            "mehdi hasan": { type: "person", party: "Zeteo / Media", lean: "Progressive / Left", figureType: "left" },
-            "jon stewart": { type: "person", party: "The Daily Show", lean: "Liberal / Progressive", figureType: "left" },
-
-            // --- MEDIA OUTLETS ---
-            "fox news": { type: "outlet", party: "Conservative Media", lean: "Conservative / Right", figureType: "right" },
-            "msnbc": { type: "outlet", party: "Liberal Media", lean: "Liberal / Center-Left", figureType: "left" },
-            "cnn": { type: "outlet", party: "Mainstream Media", lean: "Liberal / Center-Left", figureType: "left" },
-            "daily wire": { type: "outlet", party: "Conservative Media", lean: "Conservative / Right", figureType: "right" },
-            "breitbart": { type: "outlet", party: "Right Media", lean: "Hard Right / Reactionary", figureType: "right" },
-            "newsmax": { type: "outlet", party: "Right Media", lean: "Hard Right / Reactionary", figureType: "right" },
-            "the new york times": { type: "outlet", party: "Mainstream Press", lean: "Liberal / Center-Left", figureType: "left" },
-            "wall street journal": { type: "outlet", party: "Financial Press", lean: "Conservative / Market", figureType: "right" },
-
-            // --- INTERNATIONAL LEADERS & FIGURES ---
-            "vladimir putin": { type: "person", party: "Independent (Russia)", lean: "Authoritarian Nationalist", figureType: "foreign" },
-            "putin": { type: "person", party: "Independent (Russia)", lean: "Authoritarian Nationalist", figureType: "foreign" },
-            "xi jinping": { type: "person", party: "China (CCP)", lean: "Authoritarian Socialist", figureType: "foreign" },
-            "volodymyr zelenskyy": { type: "person", party: "Ukraine", lean: "Pro-Western Democratic", figureType: "foreign" },
-            "zelenskyy": { type: "person", party: "Ukraine", lean: "Pro-Western Democratic", figureType: "foreign" },
-            "benjamin netanyahu": { type: "person", party: "Israel (Likud)", lean: "Right-Wing Nationalist", figureType: "foreign" },
-            "netanyahu": { type: "person", party: "Israel (Likud)", lean: "Right-Wing Nationalist", figureType: "foreign" },
-            "claudia sheinbaum": { type: "person", party: "Mexico (MORENA)", lean: "Left-Wing / Progressive", figureType: "foreign" },
-            "sheinbaum": { type: "person", party: "Mexico (MORENA)", lean: "Left-Wing / Progressive", figureType: "foreign" },
-            "keir starmer": { type: "person", party: "UK Labour Party", lean: "Center-Left / Social Democrat", figureType: "foreign" },
-            "starmer": { type: "person", party: "UK Labour Party", lean: "Center-Left / Social Democrat", figureType: "foreign" },
-            "emmanuel macron": { type: "person", party: "France (Centrist)", lean: "Liberal / Globalist", figureType: "foreign" },
-            "macron": { type: "person", party: "France (Centrist)", lean: "Liberal / Globalist", figureType: "foreign" },
-            "javier milei": { type: "person", party: "Argentina", lean: "Libertarian / Radical Right", figureType: "foreign" },
-            "milei": { type: "person", party: "Argentina", lean: "Libertarian / Radical Right", figureType: "foreign" },
-            "olaf scholz": { type: "person", party: "Germany (SPD)", lean: "Center-Left / Social Democrat", figureType: "foreign" },
-            "scholz": { type: "person", party: "Germany (SPD)", lean: "Center-Left / Social Democrat", figureType: "foreign" },
-            "justin trudeau": { type: "person", party: "Canada (Liberal)", lean: "Liberal / Center-Left", figureType: "foreign" },
-            "trudeau": { type: "person", party: "Canada (Liberal)", lean: "Liberal / Center-Left", figureType: "foreign" },
-            "giorgia meloni": { type: "person", party: "Italy (Brothers of Italy)", lean: "Right-Wing / Nationalist", figureType: "foreign" },
-            "meloni": { type: "person", party: "Italy (Brothers of Italy)", lean: "Right-Wing / Nationalist", figureType: "foreign" },
-            "narendra modi": { type: "person", party: "India (BJP)", lean: "Right-Wing Nationalist", figureType: "foreign" },
-            "modi": { type: "person", party: "India (BJP)", lean: "Right-Wing Nationalist", figureType: "foreign" },
-            "viktor orban": { type: "person", party: "Hungary (Fidesz)", lean: "Hard Right / Illiberal Conservative", figureType: "foreign" },
-            "orban": { type: "person", party: "Hungary (Fidesz)", lean: "Hard Right / Illiberal Conservative", figureType: "foreign" },
-            "donald tusk": { type: "person", party: "Poland (Civic Coalition)", lean: "Centrist / Pro-European", figureType: "foreign" },
-            "lula da silva": { type: "person", party: "Brazil (Workers' Party)", lean: "Left-Wing / Social Democrat", figureType: "foreign" },
-            "lula": { type: "person", party: "Brazil (Workers' Party)", lean: "Left-Wing / Social Democrat", figureType: "foreign" },
-            "anthony albanese": { type: "person", party: "Australia (Labor)", lean: "Center-Left", figureType: "foreign" },
+            // --- INTERNATIONAL LEADERS & FIGURES WITH explicit PARTY AFFILIATION ---
+            "vladimir putin": { type: "person", party: "United Russia (de facto) / Independent", lean: "Authoritarian Nationalist", figureType: "foreign" },
+            "putin": { type: "person", party: "United Russia (de facto) / Independent", lean: "Authoritarian Nationalist", figureType: "foreign" },
+            "xi jinping": { type: "person", party: "Chinese Communist Party (CCP)", lean: "Authoritarian Socialist", figureType: "foreign" },
+            "volodymyr zelenskyy": { type: "person", party: "Servant of the People (Ukraine)", lean: "Pro-Western Democratic", figureType: "foreign" },
+            "zelenskyy": { type: "person", party: "Servant of the People (Ukraine)", lean: "Pro-Western Democratic", figureType: "foreign" },
+            "benjamin netanyahu": { type: "person", party: "Likud (Israel)", lean: "Right-Wing Nationalist", figureType: "foreign" },
+            "netanyahu": { type: "person", party: "Likud (Israel)", lean: "Right-Wing Nationalist", figureType: "foreign" },
+            "claudia sheinbaum": { type: "person", party: "MORENA (Mexico)", lean: "Left-Wing / Progressive", figureType: "foreign" },
+            "sheinbaum": { type: "person", party: "MORENA (Mexico)", lean: "Left-Wing / Progressive", figureType: "foreign" },
+            "keir starmer": { type: "person", party: "Labour Party (UK)", lean: "Center-Left / Social Democrat", figureType: "foreign" },
+            "starmer": { type: "person", party: "Labour Party (UK)", lean: "Center-Left / Social Democrat", figureType: "foreign" },
+            "rishi sunak": { type: "person", party: "Conservative Party (UK)", lean: "Center-Right / Conservative", figureType: "foreign" },
+            "sunak": { type: "person", party: "Conservative Party (UK)", lean: "Center-Right / Conservative", figureType: "foreign" },
+            "nigel farage": { type: "person", party: "Reform UK", lean: "Right-Wing Populist", figureType: "foreign" },
+            "farage": { type: "person", party: "Reform UK", lean: "Right-Wing Populist", figureType: "foreign" },
+            "emmanuel macron": { type: "person", party: "Renaissance (France)", lean: "Liberal / Globalist", figureType: "foreign" },
+            "macron": { type: "person", party: "Renaissance (France)", lean: "Liberal / Globalist", figureType: "foreign" },
+            "marine le pen": { type: "person", party: "National Rally (France)", lean: "Right-Wing Populist", figureType: "foreign" },
+            "le pen": { type: "person", party: "National Rally (France)", lean: "Right-Wing Populist", figureType: "foreign" },
+            "javier milei": { type: "person", party: "La Libertad Avanza (Argentina)", lean: "Libertarian / Radical Right", figureType: "foreign" },
+            "milei": { type: "person", party: "La Libertad Avanza (Argentina)", lean: "Libertarian / Radical Right", figureType: "foreign" },
+            "olaf scholz": { type: "person", party: "Social Democratic Party / SPD (Germany)", lean: "Center-Left / Social Democrat", figureType: "foreign" },
+            "scholz": { type: "person", party: "Social Democratic Party / SPD (Germany)", lean: "Center-Left / Social Democrat", figureType: "foreign" },
+            "friedrich merz": { type: "person", party: "CDU/CSU (Germany)", lean: "Center-Right / Christian Democrat", figureType: "foreign" },
+            "merz": { type: "person", party: "CDU/CSU (Germany)", lean: "Center-Right / Christian Democrat", figureType: "foreign" },
+            "justin trudeau": { type: "person", party: "Liberal Party of Canada", lean: "Liberal / Center-Left", figureType: "foreign" },
+            "trudeau": { type: "person", party: "Liberal Party of Canada", lean: "Liberal / Center-Left", figureType: "foreign" },
+            "pierre poilievre": { type: "person", party: "Conservative Party of Canada", lean: "Center-Right / Conservative", figureType: "foreign" },
+            "poilievre": { type: "person", party: "Conservative Party of Canada", lean: "Center-Right / Conservative", figureType: "foreign" },
+            "giorgia meloni": { type: "person", party: "Brothers of Italy / FdI", lean: "Right-Wing / Nationalist", figureType: "foreign" },
+            "meloni": { type: "person", party: "Brothers of Italy / FdI", lean: "Right-Wing / Nationalist", figureType: "foreign" },
+            "narendra modi": { type: "person", party: "Bharatiya Janata Party / BJP (India)", lean: "Right-Wing Nationalist", figureType: "foreign" },
+            "modi": { type: "person", party: "Bharatiya Janata Party / BJP (India)", lean: "Right-Wing Nationalist", figureType: "foreign" },
+            "viktor orban": { type: "person", party: "Fidesz (Hungary)", lean: "Hard Right / Illiberal Conservative", figureType: "foreign" },
+            "orban": { type: "person", party: "Fidesz (Hungary)", lean: "Hard Right / Illiberal Conservative", figureType: "foreign" },
+            "donald tusk": { type: "person", party: "Civic Coalition / KO (Poland)", lean: "Centrist / Pro-European", figureType: "foreign" },
+            "tusk": { type: "person", party: "Civic Coalition / KO (Poland)", lean: "Centrist / Pro-European", figureType: "foreign" },
+            "lula da silva": { type: "person", party: "Workers' Party / PT (Brazil)", lean: "Left-Wing / Social Democrat", figureType: "foreign" },
+            "lula": { type: "person", party: "Workers' Party / PT (Brazil)", lean: "Left-Wing / Social Democrat", figureType: "foreign" },
+            "jair bolsonaro": { type: "person", party: "Liberal Party / PL (Brazil)", lean: "Right-Wing Populist", figureType: "foreign" },
+            "bolsonaro": { type: "person", party: "Liberal Party / PL (Brazil)", lean: "Right-Wing Populist", figureType: "foreign" },
+            "anthony albanese": { type: "person", party: "Australian Labor Party", lean: "Center-Left", figureType: "foreign" },
+            "albanese": { type: "person", party: "Australian Labor Party", lean: "Center-Left", figureType: "foreign" },
+            "geert wilders": { type: "person", party: "Party for Freedom / PVV (Netherlands)", lean: "Right-Wing Populist", figureType: "foreign" },
+            "wilders": { type: "person", party: "Party for Freedom / PVV (Netherlands)", lean: "Right-Wing Populist", figureType: "foreign" },
+            "pedro sanchez": { type: "person", party: "Spanish Socialist Workers' Party / PSOE", lean: "Center-Left", figureType: "foreign" },
 
             // --- INSTITUTIONS & ALLIANCES ---
             "nato": { type: "institution", party: "Defense Alliance", lean: "Multilateral / Hawkish", figureType: "institution" },
             "wef": { type: "institution", party: "World Economic Forum", lean: "Globalist / Technocratic", figureType: "institution" },
             "world economic forum": { type: "institution", party: "Global NGO", lean: "Globalist / Technocratic", figureType: "institution" },
             "federal reserve": { type: "institution", party: "Central Banking System", lean: "Technocratic / Institutional", figureType: "institution" },
-            "doj": { type: "institution", party: "Department of Justice", lean: "Federal Government", figureType: "institution" },
-            "fbi": { type: "institution", party: "Federal Law Enforcement", lean: "Federal Bureau", figureType: "institution" }
+            "supreme court": { type: "institution", party: "Judicial Branch", lean: "Institutional / Constitutional", figureType: "institution" },
+            "scotus": { type: "institution", party: "Judicial Branch", lean: "Institutional / Constitutional", figureType: "institution" }
         };
 
         const UNIGRAM_WEIGHTS = {
@@ -816,6 +800,7 @@
         function runBiasAnalysis() {
             const text = document.getElementById('inputText').value;
             const strictNegation = document.getElementById('negationSelect').value === 'enabled';
+            const normMode = document.getElementById('normSelect').value;
 
             if (!text.trim()) {
                 resetDashboard();
@@ -918,13 +903,10 @@
                         if (match) {
                             const matchIndex = match.index;
                             
-                            // Check if preceded by "non-", "anti-", etc.
                             if (strictNegation && isNegatedOrPrefixed(sLower, matchIndex)) {
-                                // If negated (e.g. "non-leftist"), DO NOT attribute to Progressive/Left!
-                                // Instead, adjust coordinates away from the negated ideology
                                 if (ideology.includes("Left")) econStance += 1.5;
                                 if (ideology.includes("Right")) econStance -= 1.5;
-                                return; // Skip positive weight allocation
+                                return;
                             }
 
                             const w = item.weight * 2.2;
@@ -952,7 +934,7 @@
                         if (match) {
                             const matchIndex = match.index;
                             if (strictNegation && isNegatedOrPrefixed(sLower, matchIndex)) {
-                                return; // Ignore negated phrase pattern matches
+                                return;
                             }
 
                             const matchWeight = 5.0 * config.weight;
@@ -980,7 +962,6 @@
                 });
             });
 
-            // If no political indicators matched, default to center
             if (totalMatchWeight === 0) {
                 scores["Moderate / Center"] = 5.0;
             }
@@ -1054,7 +1035,9 @@
             renderFallaciesList(detectedFallacies);
             renderSentenceHeatmap(sentences, strictNegation);
             renderRhetoricList(loadedWords, exclamations);
-            renderPartyAlignment(topLabel);
+            
+            // Render Dynamic Calculated Party Matches based on multi-axis stances
+            renderPartyAlignment(econStance, socialStance, foreignStance, govStance, normMode);
         }
 
         function updateOverview(topLabel, confidence, biasIntensity, polemicIndex, subjectivity, factuality) {
@@ -1210,7 +1193,7 @@
                 div.className = "p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between hover:border-slate-700 transition";
                 div.innerHTML = `
                     <div class="flex items-center space-x-2">
-                        <div class="w-2 h-2 rounded-full ${ent.figureType === 'right' ? 'bg-rose-500' : ent.figureType === 'left' ? 'bg-blue-500' : ent.figureType === 'libertarian' ? 'bg-amber-500' : 'bg-teal-500'}"></div>
+                        <div class="w-2 h-2 rounded-full ${ent.figureType === 'right' ? 'bg-rose-500' : ent.figureType === 'left' ? 'bg-blue-500' : ent.figureType === 'libertarian' ? 'bg-amber-500' : ent.figureType === 'foreign' ? 'bg-teal-400' : 'bg-teal-600'}"></div>
                         <div>
                             <span class="font-semibold text-slate-200">${ent.name}</span>
                             <span class="text-[10px] text-slate-400 block">${ent.party} • ${ent.lean}</span>
@@ -1282,7 +1265,6 @@
             sentences.forEach((sentence) => {
                 let highlightClass = "";
 
-                // Check for prefixed/negated terms explicitly
                 if (strictNegation && /\b(non|anti|un|not|no|pseudo)[-\s]+(leftist|marxist|conservative|woke|authoritarian|globalist)/i.test(sentence)) {
                     highlightClass = "highlight-negated";
                 } else if (/\b(woke|dei|cultural marxism|deep state|border invasion|illegal aliens|fake news|leftist mob|weaponized|biden regime|groomer|stolen election|globalist cabal|marxist|patriots|sovereignty)\b/i.test(sentence)) {
@@ -1325,29 +1307,77 @@
             container.appendChild(div);
         }
 
-        function renderPartyAlignment(topIdeology) {
+        // Dynamic 4D Euclidean Stance Vector Calculation for Political Party Alignment
+        function calculatePartyMatches(econ, social, foreign, gov, normMode) {
+            const results = PARTY_DATABASE.map(party => {
+                const dE = econ - party.coords.econ;
+                const dS = social - party.coords.social;
+                const dF = foreign - party.coords.foreign;
+                const dG = gov - party.coords.gov;
+                
+                // 4D Euclidean distance calculation
+                const dist = Math.sqrt(dE * dE + dS * dS + dF * dF + dG * dG);
+                
+                // Convert distance to calculated percentage match (Max theoretical distance = 40)
+                let match = Math.round((1 - (dist / 28)) * 100);
+                match = Math.max(5, Math.min(99, match));
+
+                return {
+                    ...party,
+                    matchPercent: match,
+                    distance: dist
+                };
+            });
+
+            let filtered = results;
+            if (normMode === 'us') {
+                filtered = results.filter(p => p.scope === 'us' || p.country === 'United States');
+            }
+
+            // Sort by calculated match percentage descending
+            filtered.sort((a, b) => b.matchPercent - a.matchPercent);
+            return filtered;
+        }
+
+        function renderPartyAlignment(econ, social, foreign, gov, normMode) {
             const container = document.getElementById('partyList');
+            const badge = document.getElementById('partyScopeBadge');
+            if (!container) return;
             container.innerHTML = '';
 
-            const partyMap = {
-                "Progressive / Left": [{ name: "Democratic Party (Progressive Wing)", match: "94%" }, { name: "Democratic Socialists", match: "88%" }],
-                "Green / Eco-Socialist": [{ name: "Green Party", match: "96%" }],
-                "Liberal / Center-Left": [{ name: "Democratic Party", match: "94%" }],
-                "Moderate / Center": [{ name: "Independent", match: "89%" }, {name:"Foward Party", match:"90%"}],
-                "Conservative / Right": [{ name: "Republican Party", match: "94%" }],
-                "Hard Right / Reactionary": [{ name: "Republican Party (MAGA Wing)", match: "98%" }],
-                "Libertarian / Free Market": [{ name: "Libertarian Party", match: "96%" }],
-                "Populist / Anti-Establishment": [{ name: "Populist Movement Bloc", match: "92%" }, { name: "Working Families Party", match: "91%" }]
-            };
+            if (badge) {
+                badge.textContent = normMode === 'global' ? 'Global Multi-Party' : 'US Landscape';
+            }
 
-            const parties = partyMap[topIdeology] || partyMap["Moderate / Center"];
+            const matches = calculatePartyMatches(econ, social, foreign, gov, normMode);
+            const displayList = matches.slice(0, 7);
 
-            parties.forEach(p => {
+            if (displayList.length === 0) {
+                container.innerHTML = '<span class="text-slate-500 italic">No party matches available.</span>';
+                return;
+            }
+
+            displayList.forEach(p => {
                 const div = document.createElement('div');
-                div.className = "p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between";
+                div.className = "p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between hover:border-slate-700 transition";
+                
+                let colorClass = "text-indigo-400";
+                if (p.matchPercent >= 80) colorClass = "text-emerald-400 font-bold";
+                else if (p.matchPercent >= 60) colorClass = "text-blue-400 font-semibold";
+                else if (p.matchPercent >= 40) colorClass = "text-amber-400";
+                else colorClass = "text-slate-400";
+
                 div.innerHTML = `
-                    <span class="text-slate-200 font-medium">${p.name}</span>
-                    <span class="text-indigo-400 font-mono font-semibold text-xs">${p.match} Proximity</span>
+                    <div class="flex flex-col pr-2">
+                        <div class="flex items-center space-x-2 flex-wrap">
+                            <span class="text-slate-100 font-medium">${p.name}</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">${p.country}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 block mt-0.5">${p.ideology}</span>
+                    </div>
+                    <div class="text-right whitespace-nowrap">
+                        <span class="font-mono text-xs ${colorClass}">${p.matchPercent}% Match</span>
+                    </div>
                 `;
                 container.appendChild(div);
             });
@@ -1360,7 +1390,7 @@
             document.getElementById('polemicGaugeVal').textContent = '0/100';
             document.getElementById('subjGaugeVal').textContent = '0%';
             document.getElementById('factGaugeVal').textContent = '0%';
-            document.getElementById('explanationText').textContent = 'Enter or paste text into the left workbench and click "Execute Deep Bias Analysis" to display political compass placement, stance vectors, entity critiques, party matches, moral foundations, and sentence highlights.';
+            document.getElementById('explanationText').textContent = 'Enter or paste text into the left workbench and click "Execute Deep Bias Analysis" to display political compass placement, stance vectors, entity critiques, calculated party matches, moral foundations, and sentence highlights.';
             renderCompass(0, 0);
             renderMultiAxisBars(0, 0, 0, 0);
             document.getElementById('ideologyBars').innerHTML = '<div class="text-xs text-slate-500 italic text-center">Run analysis to generate probability distribution across ideology models.</div>';
@@ -1369,7 +1399,7 @@
             document.getElementById('fallaciesList').innerHTML = '<span class="text-slate-500 italic">Logical fallacy patterns will appear here.</span>';
             document.getElementById('sentenceHeatmap').innerHTML = '<span class="text-slate-500 text-xs font-sans italic">Annotated text with color-coded sentence framing will appear here after analysis.</span>';
             document.getElementById('rhetoricList').innerHTML = '<span class="text-slate-500 italic">No rhetorical signals detected yet.</span>';
-            document.getElementById('partyList').innerHTML = '<span class="text-slate-500 italic">No party alignment calculated yet.</span>';
+            renderPartyAlignment(0, 0, 0, 0, document.getElementById('normSelect').value);
         }
 
         window.onload = function() {
